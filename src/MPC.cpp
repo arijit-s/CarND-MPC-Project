@@ -6,8 +6,8 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 7;
-double dt = 0.2;
+size_t N = 10;
+double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -35,7 +35,7 @@ double weight_v = 1;
 double weight_delta = 5;
 double weight_a = 5;
 
-double weight_delta_diff = 200; //Steering angle change
+double weight_delta_diff = 600; //Steering angle change
 double weight_a_diff = 10;     //Acceleration Change
 
 // The solver takes all the state variables and actuator
