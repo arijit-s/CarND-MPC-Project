@@ -91,8 +91,7 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-          double delta = j[1]["steering_angle"];
-          double a = j[1]["throttle"];
+
 
           /*
           * TODO: Calculate steering angle and throttle using MPC.
@@ -100,19 +99,17 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-
-          Eigen::VectorXd ptsx_car(ptsx.size());
-          Eigen::VectorXd ptsy_car(ptsy.size());
-
-          for (int i = 0; i <= ptsx.size(); i++){
+          double delta = j[1]["steering_angle"];
+          double a = j[1]["throttle"];
+          
+          //Transform the point to car's co-ordinate system.
+          for (unsigned i = 0; i <= ptsx.size(); i++){
             double shift_x = ptsx[i] - px;
             double shift_y = ptsy[i] - py;
 
             ptsx[i] = (shift_x * cos(0-psi) - shift_y * sin(0-psi));
             ptsy[i] = (shift_x * sin(0-psi) + shift_y * cos(0-psi));
 
-            //ptsx_car[i] = shift_x * cos(-psi) - shift_y * sin(-psi);
-            //ptsy_car[i] = shift_x * sin(-psi) + shift_y * cos(-psi);
           }
 
           double* ptrx = &ptsx[0];
@@ -121,33 +118,28 @@ int main() {
           double* ptry = &ptsy[0];
           Eigen::Map<Eigen::VectorXd> ptsy_transform(ptry, 6);
 
-          //auto coeffs = polyfit(ptsx_transform,ptsy_transform,3);
           auto coeffs = polyfit(ptsx_transform,ptsy_transform,3);
 
           double cte = polyeval(coeffs, 0);
           //double epsi = psi - atan(coeffs[1] + 2*coeffs[2]*px + 3*coeffs[3]*px*px);
           double epsi =  - atan(coeffs[1]);
 
-          double Lf = 2.67;
+          const double Lf = 2.67;
 
           // Latency for predicting time at actuation
-          const double dt = 0.1;
+          const double latency = 0.1;
           
           // Predict state after latency
-          // x, y and psi are all zero after transformation above
-          double pred_px = 0.0 + v * dt; // Since psi is zero, cos(0) = 1, can leave out
-          const double pred_py = 0.0; // Since sin(0) = 0, y stays as 0 (y + v * 0 * dt)
-          double pred_psi = 0.0 + v * -delta / Lf * dt;
-          double pred_v = v + a * dt;
-          double pred_cte = cte + v * sin(epsi) * dt;
-          double pred_epsi = epsi + v * -delta / Lf * dt;
+
+          double pred_px = 0.0 + v * cos(0)* latency;             // x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
+          double pred_py = 0.0 + v * sin(0) * latency;            // y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt
+          double pred_psi = 0.0 - (v / Lf) * delta  * latency;    // psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
+          double pred_v = v + a * latency;                        // v_[t+1] = v[t] + a[t] * dt
+          double pred_cte = cte + v * sin(epsi) * latency;        // cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+          double pred_epsi = epsi + v * -delta / Lf * latency;    // epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
 
           Eigen::VectorXd state(6);
           state << pred_px,pred_py,pred_psi,pred_v,pred_cte,pred_epsi;
-
-
-          // double steer_value = j[1]["steering_angle"];
-          // double throttle_value = j[1]["throttle"];
 
           auto vars = mpc.Solve(state,coeffs);
           double steer_value = vars[0] / (deg2rad(25) * Lf);
@@ -163,7 +155,7 @@ int main() {
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
 
-          for(int i = 2; i < vars.size(); i++){
+          for(unsigned i = 2; i < vars.size(); i++){
             if(i%2 == 0){
               mpc_x_vals.push_back(vars[i]);
             }else{
