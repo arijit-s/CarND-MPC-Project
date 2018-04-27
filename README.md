@@ -1,3 +1,56 @@
+# Writeup for Project 10 - Controls-MPC Project
+
+---
+
+## Describe model in detail. This includes the state, actuators and update equations.
+
+The vehicle model used is a kinematic bicycle model that ignore tire forces, gravity, and mass of the vehicle. This simplification reduces the accuracy of the models, but it also makes them more tractable.
+At low and moderate speeds, kinematic models often approximate the actual vehicle dynamics.
+
+The actuators used in this model are steering angle and the throttle of the car.
+
+The following equations are used to update the state of the vehicle.
+
+```
+
+// x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
+// y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt
+// psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
+// v_[t+1] = v[t] + a[t] * dt
+// cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+// epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
+```
+In the above equations,
+```
+x,y => position of the car
+psi => heading direction
+v => velocity 
+cte => cross-track error
+epsi => orientation error
+Lf => the distance between the center of mass of the vehicle and the front wheels 
+```
+
+The update equations are implemented in file MPC.cpp(Line 142)
+
+## Timestep Length and Elapsed Duration (N & dt)
+
+First I started with the N and dt value of 25 and 0.05. The main idea was to predict nearly 1 second into the future so T becomes 1, which means N * dt should also be near to 1. But with that value the computation was taking long time and I started tuning them keeping in mind their multiplications become 1.
+
+Finally I came up with the value for N and dt as 10 and 0.1.
+
+
+## Polynomial Fitting and MPC Preprocessing
+
+The simulator returns the waypoints using the map's coordinate system, which is different than the car's coordinate system. So I shifted the waypoints coordinate to car's coordinate system. Then a 3rd-degree polynomial is fitted to the transformed waypoints. These polynomial coefficients are used to calculate the cte and epsi later on.
+Then the same method is used to plot a line for the trajectory path.
+
+## Model Predictive Control with Latency
+
+The MPC was implemented in such a way that it is able to handle 100 ms latency. I predicted the state of the car 100 ms ahead and feeded that state to MPC Controller to deal with the latency.
+The code can be found at main.cpp(Line 130 - 140)
+
+---
+
 # CarND-Controls-MPC
 Self-Driving Car Engineer Nanodegree Program
 
