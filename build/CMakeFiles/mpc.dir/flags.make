@@ -6,5 +6,5 @@ CXX_FLAGS = -Wall   -std=c++11 -O3
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/usr/local/include -I/mnt/c/Users/Dell/Documents/udacity/term2/CarND-MPC-Project/src/Eigen-3.3 
+CXX_INCLUDES = -I/usr/local/include -I/mnt/d/udacity/Term2/CarND-MPC-Project/src/Eigen-3.3 
 
